@@ -1,0 +1,15 @@
+Load Button click:
+	get_form()
+	
+get_form()  // opens selected file and creates values list (list displayed in table)
+		open file
+		for line in file
+			if GCCCREATE // line defines an AT control
+				values.append(decode_widget(line)) // parse and process AT control definition line
+			else
+				// is a line that defines an AT property for  the previously defined control
+				cmd_props.append(decode_property(line,last_widget_type)) // parse and process AT property definition line
+				
+
+decode_widget() // takes control definition line as read from file, converts to a list 
+                // performs cross reference from AT style widge / control to FP control
