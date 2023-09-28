@@ -3,10 +3,14 @@
 #
 # TO DO:
 # some documention would be nice
+# items for grids
+# what to do about AT label with border vs FP label
+# if label prop has border use TEdit with enable set to false?
 # add missing controls
 # add auto generate of button click events
 # 
 # Process basics:
+# NOTE!! Assumes AT Form sizing  (Scale) is pixels !!!
 # User Selects AT form file to process (Open) 
 # User Loads form into table (Load)
 # User Processes from into Free Pascal skeleton  (Genereate)
@@ -52,7 +56,8 @@ PSCALE = 1.10    # 110%
 #from tkinter.font import Font
 
 # debug flag dbg (results in printing debug info to terminal / output window)
-dbg = 'none'
+#dbg = 'none'
+dbg = 'yes'
 
 dbg_process_form = False
 dbg_output_controls = False
@@ -306,7 +311,7 @@ wdgt_CHECK      :  ['Checkbox', 'TCheckBox',False,True],
 wdgt_LIST       :  ['Listbox', 'TListBox'  ,False,False],
 wdgt_LISTMULTISEL  :  ['Listbox(MutiSel)', 'ListBox',False,False], 
 wdgt_DRPDWNCBO  :  ['DropDownCombo', 'TComboBox',False,True],
-wdgt_DRPDWNLST  :  ['DropDownList', 'TComboBox', False,True],
+wdgt_DRPDWNLST  :  ['DropDownList', 'TListBox', False,False],     # List Box with drop-down list selected
 wdgt_PICTURE    :  ['Picture', 'TImage',False,True],
 wdgt_FRAME      :  ['Frame', 'TPanel',True,True],
 wdgt_GRID       :  ['Grid', 'TStringGrid',False,False],
@@ -419,7 +424,18 @@ prop_CUSTOM: ['prop_CUSTOM',UNKNOWN],
 
 def scale(px):
     """return string representation of scaled pixel value px"""
-    return str(round(int(px)*PSCALE))
+    mypix = '0'
+    try:
+        mypix = float(px)
+        mypix = str(round(mypix*PSCALE))
+    except:
+        try:
+            mypix = int(px)
+            mypix = str(round(mypix*PSCALE))
+        except:
+             sg.popup('Warning string invalid pixel representation, cannot scale' + px)
+
+    return mypix
 
 def get_indent():
     str = " "*(indent_cnt * INDENT_AMOUNT)
@@ -446,8 +462,21 @@ def wrt_cmpnt_hdr(cv):
 
 
 def wrt_menu(cv):
+    def m_indent(lv):
+        """get indent for menu level lv"""
+        return get_indent() + (lv)*( " "*INDENT_AMOUNT)
+    
+    def nxt_mnu_level(idx,menus):
+        """get next menu item level, return 0 if at the end"""
+        if idx+1 < len(menus):
+            nxt_level = int(menus[idx+1][1])
+        else:
+            nxt_level = 0
+        return nxt_level
+
     insert_form_text(get_indent() + "object MainMenu: TMainMenu")        # note Menu is a reserved word, so we are just overwriting the AT Menu control "MainMenu"
     insert_code_text(cd_indent() + cd_indent() + "MainMenu: TMainMenu;")
+    
     widget_id = cv[TID]
     if widget_id in propvalues:
         prop_list = propvalues[widget_id]  # get the menu list
@@ -455,12 +484,42 @@ def wrt_menu(cv):
         indent = get_indent() + " "*INDENT_AMOUNT
         insert_form_text(indent + 'Left = 192') # this needs to be figured out!
         insert_form_text(indent + 'Top = 144')
-        nxt_indent = indent + " "*INDENT_AMOUNT
-        for menu_item in menus:
-            insert_form_text(indent + "object mnu"+str(menu_item) + ": TMenuItem")
-            insert_form_text(nxt_indent + "Caption = '"+str(menu_item) + "'")
-            insert_form_text(indent + "end")
-            insert_code_text(cd_indent() + cd_indent() + "mnu"+str(menu_item) + ": TMenuItem;")
+        
+        last_mnu_level = 999
+        for m_idx in range(len(menus)):
+            menu_item = menus[m_idx]
+            # rem menu_item is a list of the full menu def 
+            # ie:
+            #['Maint', '1', 'Item ', '', '0', '1', '', '0', '']
+            #['CanShip', '2', 'Cancel Last Shipment', '', '0', '1', '', '1', '']
+            #
+            mnu_level = int(menu_item[1]) 
+            nxt_level =nxt_mnu_level(m_idx,menus) 
+
+            indent = m_indent(mnu_level)
+            nxt_indent = indent + " "*INDENT_AMOUNT
+
+            mnu_name = str(menu_item[0]).replace('*','')  # get rid of the special key designation
+            insert_form_text(indent + "object mnu"+ mnu_name + ": TMenuItem")
+            insert_form_text(nxt_indent + "Caption = '"+str(menu_item[2]) + "'")
+
+            if (nxt_level == 0):   # done with menu items, need the end
+                insert_form_text(m_indent(mnu_level) + "end")   # add for first skipped menuitem
+
+            elif (mnu_level < nxt_level):    # will we go up a level at the next menu?
+                pass                         # yes, skip end
+
+            else:                            #  this menu  at same level or lower then next?
+                insert_form_text(indent + "end")   # yes, add the end 
+
+            if (mnu_level > nxt_level) and (nxt_level != 0):    # we drop down a lever, add end unless last menu item
+                insert_form_text(m_indent(nxt_level) + "end")   
+
+            # code for menu item
+            insert_code_text(cd_indent() + cd_indent() + "mnu"+ mnu_name + ": TMenuItem;")
+            last_mnu_level = mnu_level
+
+       # insert_form_text(m_indent(mnu_level) + "end")   # add for first skipped menuitem
 
 def wrt_lable(cv):
     """write form object for label"""
@@ -507,7 +566,7 @@ def wrt_stringGrid(cv):
                insert_form_text(indent2 + "item" ) 
                caption = headings_val[idx]   
                insert_form_text(indent3 + "Title.Caption = '" + caption + "'" ) 
-               wdth = cwdth_val[idx]
+               wdth = scale(cwdth_val[idx])
                insert_form_text(indent3 + "Width =" + wdth )  
                if (idx + 1) < col_cnt: 
                 insert_form_text(indent2 + "end" )
@@ -661,7 +720,11 @@ def call_control_output(control_values,ridx):
     elif control_type == "Label":
         wrt_lable(control_values)
     elif control_type == "Listbox":
-        wrt_cmpnt(control_values)    
+        wrt_cmpnt(control_values) 
+    elif control_type == "DropDownList":   # listbox with dropdown checked
+        wrt_cmpnt(control_values)     
+    elif control_type == "DropDownCombo":
+        wrt_cmpnt(control_values)        
     elif control_type == "EditMulti":
         wrt_cmpnt(control_values)       
     elif control_type == "MENU":
@@ -753,7 +816,8 @@ def decode_property(dataln,widget_type):
             newcodeln = list(decodeln[:PVALUE])
             for idx in range(PVALUE, len(decodeln)):
                 menu_values = decodeln[idx].split(SVM)
-                property_value.append(menu_values[2]) # for now just grab the menu name, figure more out later
+                #property_value.append(menu_values[2]) # for now just grab the menu name, figure more out later
+                property_value.append(menu_values) # for now just grab all the menu def, figure more out later
             newcodeln.append(property_value)
             decodeln = newcodeln
     if property_key in wid_props:
@@ -931,7 +995,7 @@ def insert_code_text(text):
     tkwidget = window['-CODE_TEXT-']
     tkwidget.Widget.insert('end', text+'\n') 
 
-def save_code():
+def save_code(pu):
     if form_processed == True:
         filepathobj = pathlib.PurePath(file_to_open)
         filepath = filepathobj.parent
@@ -941,9 +1005,10 @@ def save_code():
         file = pathlib.Path(filepath,newfilename)
     #file.write_text(values.get('-CODE_TEXT-'),encoding="utf-8") 
         file.write_text(window['-CODE_TEXT-'].get(),encoding="utf-8")
-        sg.popup('Saved', str(file))   
+        if pu:
+            sg.popup('Saved', str(file))   
 
-def save_form():
+def save_form(pu):
     if form_processed == True:
         filepathobj = pathlib.PurePath(file_to_open)
         filepath = filepathobj.parent
@@ -953,7 +1018,8 @@ def save_form():
         file = pathlib.Path(filepath,newfilename)
     #file.write_text(values.get('-FORM_TEXT-'),encoding="utf-8")
         file.write_text(window['-FORM_TEXT-'].get(),encoding="utf-8")
-        sg.popup('Saved', str(file))
+        if pu:
+            sg.popup('Saved', str(file))
 
 def wrt_lpi():
     my_lpi = LPI_TEMPLATE
@@ -968,7 +1034,7 @@ def wrt_lpi():
     newfilename = app_name + '.lpi'
     file = pathlib.Path(filepath,newfilename)
     file.write_text(my_lpi,encoding="utf-8")
-    sg.popup('Saved', str(file))
+
 
 def wrt_lpr():
     my_lpr = """program %PROGRAM_NAME%;
@@ -1003,7 +1069,7 @@ end."""
     newfilename = app_name + '.lpr'
     file = pathlib.Path(filepath,newfilename)
     file.write_text(my_lpr,encoding="utf-8")
-    sg.popup('Saved', str(file))
+
 
 ################################################################## start of processing code ############################################################################
 
@@ -1088,6 +1154,9 @@ while True:
                 widget_id, prop_list = get_prop_list(last_row_click)
                 window['WIDGET_ID'].update(value=widget_id)
                 window['-PROP_TABLE-'].update(values=prop_list)
+                if dbg =='yes':
+                    for prop in prop_list:
+                        print(prop)
 
     elif event == "Open File":
             file_to_open = sg.popup_get_file('Open',no_window=True, keep_on_top=True)
@@ -1095,11 +1164,11 @@ while True:
                 window['FILENAME'].update(value=file_to_open)
 
     elif event == "Save_Form" and file_to_open != None:
-        save_form()
+        save_form(True)
   
 
     elif event == "Save_Code" and file_to_open != None:
-        save_code()
+        save_code(True)
 
            
     elif event == "Load" and file_to_open != None:
@@ -1111,8 +1180,9 @@ while True:
             process_form()
             form_processed = True
             if values['AUTO_SAVE'] == True:  #  save 
-                save_code()
-                save_form()
+                save_code(False)
+                save_form(False)
                 wrt_lpi()
                 wrt_lpr()
-            
+                sg.popup('Auto Saved Generated Files (.pas, .lfm, .lpi, .lpr) to ' + str(pathlib.PurePath(file_to_open)))
+
