@@ -1,13 +1,8 @@
 # AT_TO_FP_Form.py
-# Scrip parses ACCUTERM form def file and creates Free Pascal (Lazarus) .lpr .lpi .pas and .lfm file template for application 
+# Script parses AT form def file and creates Free Pascal (Lazarus) .lpr .lpi .pas and .lfm file template for application 
 #
 # TO DO:
 # some documention would be nice
-# sonething is wrong with dropdown list see cb1Buyer TComboBox (I would think this should be a listbox??)
-# compare  unitOE_save.lfm to generated unitOE.lfm
-# items for grids
-# what to do about AT label with border vs FP label
-# if label prop has border use TEdit with enable set to false?
 # add missing controls
 # add auto generate of button click events
 # 
