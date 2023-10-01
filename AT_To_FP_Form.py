@@ -3,6 +3,8 @@
 #
 # TO DO:
 # some documention would be nice
+# sonething is wrong with dropdown list see cb1Buyer TComboBox (I would think this should be a listbox??)
+# compare  unitOE_save.lfm to generated unitOE.lfm
 # items for grids
 # what to do about AT label with border vs FP label
 # if label prop has border use TEdit with enable set to false?
@@ -52,12 +54,17 @@ from LPI_TEMPLATE import LPI_TEMPLATE
 # all important scaling value - scales AT form controls by set amount
 PSCALE = 1.10    # 110%
 
+# all important default values for controls. I know this is a hack, fix it!
+DFLT_ITEM_HEIGHT = 'ItemHeight = 16'    # used for listbox and combobox
+DFLT_LABEL_BACK = 'clInactiveCaption'   # AT can draw labels with border style, not so for FP, just change background
+
 #from tkinter import Tk
 #from tkinter.font import Font
 
 # debug flag dbg (results in printing debug info to terminal / output window)
-#dbg = 'none'
-dbg = 'yes'
+dbg = 'none'
+#dbg = 'yes'
+#dbg = 'all'
 
 dbg_process_form = False
 dbg_output_controls = False
@@ -166,6 +173,8 @@ grd_CHECKBOX = '2'
 grd_DROPDOWN = '3'
 grd_COMBO = '4'
 grd_BUTTON = '7'
+
+grd_cell_types = ["cbsNone","cbsAuto","cbsCheckboxColumn","cbsPickList","cbsNone","cbsNone","cbsNone","cbsButtonColumn"]
 
 # at widget properties
 prop_DEFVAL = '0'
@@ -521,7 +530,7 @@ def wrt_menu(cv):
 
        # insert_form_text(m_indent(mnu_level) + "end")   # add for first skipped menuitem
 
-def wrt_lable(cv):
+def wrt_label(cv):
     """write form object for label"""
     wrt_cmpnt(cv)
         # add in caption (if found)
@@ -532,12 +541,28 @@ def wrt_lable(cv):
         if caption != "":
             indent = get_indent() + " "*INDENT_AMOUNT
             insert_form_text(indent + "Caption  = '" + caption + "'")
+        lblborder = get_prop('prop_BORDER',prop_list)  # do we have a border?
+        if lblborder == "2":                           # yes, only thing we can do to highlite is change the color
+            indent = get_indent() + " "*INDENT_AMOUNT
+            insert_form_text(indent + "Color = " + DFLT_LABEL_BACK )
 
 def wrt_panel(cv):
     """write form object for panel"""
     wrt_cmpnt(cv)
     indent = get_indent() + " "*INDENT_AMOUNT
-    insert_form_text(indent + "BorderStyle = bsSingle")           
+    insert_form_text(indent + "BorderStyle = bsSingle") 
+
+def wrt_listbox(cv):
+    """write form object for ListBox"""
+    wrt_cmpnt(cv)
+    indent = get_indent() + " "*INDENT_AMOUNT
+    insert_form_text(indent + DFLT_ITEM_HEIGHT) 
+
+def wrt_combobox(cv):
+    """write form object for ComboBox"""
+    wrt_cmpnt(cv)
+    indent = get_indent() + " "*INDENT_AMOUNT
+    insert_form_text(indent + DFLT_ITEM_HEIGHT)                  
 
 def wrt_stringGrid(cv):
     """write form object for TStringGrid"""
@@ -550,7 +575,7 @@ def wrt_stringGrid(cv):
         ccnt_val = get_prop('prop_COLUMNS',prop_list)  # column count
         headings_val = get_prop('prop_COLHEADING',prop_list)  # column headings
         cwdth_val = get_prop('prop_COLWIDTH',prop_list)  # column width
-        ctype_val = get_prop('prop_COLHEADING',prop_list)  # column types
+        ctype_val = get_prop('prop_COLFIELDTYPE',prop_list)  # column types
         citems_val = get_prop('prop_COLITEMS',prop_list)  # column items (for dropdown / combo)
         if ccnt_val != "":
             indent = get_indent() + " "*INDENT_AMOUNT
@@ -567,9 +592,12 @@ def wrt_stringGrid(cv):
                caption = headings_val[idx]   
                insert_form_text(indent3 + "Title.Caption = '" + caption + "'" ) 
                wdth = scale(cwdth_val[idx])
-               insert_form_text(indent3 + "Width =" + wdth )  
+               insert_form_text(indent3 + "Width =" + wdth )
+               col_type = int(ctype_val[idx])
+               if col_type in range(len(grd_cell_types)):
+                 insert_form_text(indent3 + "ButtonStyle = " + grd_cell_types[col_type]) 
                if (idx + 1) < col_cnt: 
-                insert_form_text(indent2 + "end" )
+                 insert_form_text(indent2 + "end" )
                else:
                 insert_form_text(indent2 + "end>" )   
             #  
@@ -646,6 +674,7 @@ def form_object(cv):
     form = cv[TID]
     insert_form_text('object frm'+form+': Tfrm'+form) 
     add_cntl_pos(cv)    # we assume the form control is the first line in formvalues
+    insert_form_text('  AutoScroll = True')  # we want scroll bars
     insert_form_text(ft)   
     insert_form_text('  Menu = MainMenu')   # Note we hard code this, probably will be a problem!
     insert_form_text(sp_obj)  # add the session properties storage object
@@ -712,19 +741,19 @@ def call_control_output(control_values,ridx):
     elif control_type == "Cmd Button":
         wrt_cmpnt(control_values)
     elif control_type == "DropDownList":  
-        wrt_cmpnt(control_values)    
+        wrt_listbox(control_values)    
     elif control_type == "Edit":
         wrt_cmpnt(control_values)
     elif control_type == "Frame":
         wrt_panel(control_values)    
     elif control_type == "Label":
-        wrt_lable(control_values)
+        wrt_label(control_values)
     elif control_type == "Listbox":
         wrt_cmpnt(control_values) 
     elif control_type == "DropDownList":   # listbox with dropdown checked
-        wrt_cmpnt(control_values)     
+        wrt_listbox(control_values)     
     elif control_type == "DropDownCombo":
-        wrt_cmpnt(control_values)        
+        wrt_combobox(control_values)        
     elif control_type == "EditMulti":
         wrt_cmpnt(control_values)       
     elif control_type == "MENU":
