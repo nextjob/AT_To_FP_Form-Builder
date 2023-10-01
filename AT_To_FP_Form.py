@@ -90,7 +90,7 @@ VM  = chr(253)  # hx fd value marker     y
 SVM = chr(252)  # hx fc sub value marker u
 TYPE_IDX_SEP = '^'
 
-# define ACCUTERM form def layout
+# define AT form def layout
 FMCMD = 0
 FMID = 1
 FMPARENT = 2
@@ -122,10 +122,8 @@ PCOL= 3
 PROW= 4
 PVALUE = 5
 
-# from ATGUIEQUATES
-# commands
-GCCREATE = '2'
-GCSETPROP = '4'
+# form creation commands
+FRMCREATE = '2'
 
 # at widget types
 wdgt_FORMSIZABLE = '5'
@@ -873,7 +871,7 @@ def get_form():
                 # processed all form definitions?
                 if cmd == '0':
                     break    
-                if cmd == GCCREATE:
+                if cmd == FRMCREATE:
                     # command is to create an AT widget (control) add to our list of widgets
                     decodelist = decode_widget(line)
                     control = decodelist[TTYPE]
@@ -902,7 +900,7 @@ def get_form():
                 app_name = app_name.replace(" ", "_")
                 app_name = app_name.upper()
 
-            elif cmd == GCCREATE: 
+            elif cmd == FRMCREATE: 
             # what we should be doing here is skipping over the app definition data in the form definition file
             # (we are assuming the actual form definition starts at the second create, this maybe an error 
             #  other option would be to look at the count of "*" or fields in the ID 0 = App create, 1 = form create, 2 = widget create)
