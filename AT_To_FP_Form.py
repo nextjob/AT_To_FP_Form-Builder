@@ -502,20 +502,26 @@ def wrt_menu(cv):
             nxt_indent = indent + " "*INDENT_AMOUNT
 
             mnu_name = str(menu_item[0]).replace('*','')  # get rid of the special key designation
+
+            if dbg != 'none':
+                print(mnu_name, last_mnu_level,mnu_level,nxt_level)
+
+         
             insert_form_text(indent + "object mnu"+ mnu_name + ": TMenuItem")
             insert_form_text(nxt_indent + "Caption = '"+str(menu_item[2]) + "'")
 
-            if (nxt_level == 0):   # done with menu items, need the end
-                insert_form_text(m_indent(mnu_level) + "end")   # add for first skipped menuitem
-
-            elif (mnu_level < nxt_level):    # will we go up a level at the next menu?
-                pass                         # yes, skip end
-
-            else:                            #  this menu  at same level or lower then next?
-                insert_form_text(indent + "end")   # yes, add the end 
-
-            if (mnu_level > nxt_level) and (nxt_level != 0):    # we drop down a lever, add end unless last menu item
-                insert_form_text(m_indent(nxt_level) + "end")   
+              
+            if (mnu_level == nxt_level):   # same level, need end
+                insert_form_text(m_indent(mnu_level) + "end")  
+     
+            elif (mnu_level > nxt_level):   # dropped a level, need end, but how many?
+                level_drop = mnu_level - nxt_level
+                if nxt_level != 0:
+                    level_drop += 1
+                for i in range(level_drop):
+                    at_level = mnu_level - i
+                    insert_form_text(m_indent(at_level) + "end")
+  
 
             # code for menu item
             insert_code_text(cd_indent() + cd_indent() + "mnu"+ mnu_name + ": TMenuItem;")
