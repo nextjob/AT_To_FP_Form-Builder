@@ -4,7 +4,7 @@
 # TO DO:
 # some documention would be nice
 # add missing controls
-# add auto generate of button click events
+# automate code generation of field validation Data Type on AT properties
 # 
 # Process basics:
 # NOTE!! Assumes AT Form sizing  (Scale) is pixels !!!
@@ -15,6 +15,10 @@
 # All files are created in the same directory as the AT form definition file, suggest creating  unique directory for each generated application skeleton.
 #
 # This is a work in progress !!
+# 
+# mods 
+# ==================================================
+# 11/01/2024  AT listbox with dropdown checked, works better as TComboBox with style csDropDownList
 # 
 """This is free and unencumbered software released into the public domain.
 
@@ -313,7 +317,7 @@ wdgt_CHECK      :  ['Checkbox', 'TCheckBox',False,True],
 wdgt_LIST       :  ['Listbox', 'TListBox'  ,False,False],
 wdgt_LISTMULTISEL  :  ['Listbox(MutiSel)', 'ListBox',False,False], 
 wdgt_DRPDWNCBO  :  ['DropDownCombo', 'TComboBox',False,True],
-wdgt_DRPDWNLST  :  ['DropDownList', 'TListBox', False,False],     # List Box with drop-down list selected
+wdgt_DRPDWNLST  :  ['DropDownList', 'TComboBox', False,False],     # List Box with drop-down list selected
 wdgt_PICTURE    :  ['Picture', 'TImage',False,True],
 wdgt_FRAME      :  ['Frame', 'TPanel',True,True],
 wdgt_GRID       :  ['Grid', 'TStringGrid',False,False],
@@ -557,6 +561,14 @@ def wrt_listbox(cv):
     indent = get_indent() + " "*INDENT_AMOUNT
     insert_form_text(indent + DFLT_ITEM_HEIGHT) 
 
+def wrt_listboxdd(cv):
+    """write form object for listbox with dropdown checked, TComboBox works better with style csDropDownList"""
+    wrt_cmpnt(cv)
+    indent = get_indent() + " "*INDENT_AMOUNT
+    insert_form_text(indent + DFLT_ITEM_HEIGHT) 
+    insert_form_text(indent + "Style = csDropDownList")
+
+
 def wrt_combobox(cv):
     """write form object for ComboBox"""
     wrt_cmpnt(cv)
@@ -739,8 +751,6 @@ def call_control_output(control_values,ridx):
         wrt_cmpnt(control_values)
     elif control_type == "Cmd Button":
         wrt_cmpnt(control_values)
-    elif control_type == "DropDownList":  
-        wrt_listbox(control_values)    
     elif control_type == "Edit":
         wrt_cmpnt(control_values)
     elif control_type == "Frame":
@@ -749,8 +759,8 @@ def call_control_output(control_values,ridx):
         wrt_label(control_values)
     elif control_type == "Listbox":
         wrt_cmpnt(control_values) 
-    elif control_type == "DropDownList":   # listbox with dropdown checked
-        wrt_listbox(control_values)     
+    elif control_type == "DropDownList":   # listbox with dropdown checked, TComboBox works better with style csDropDownList
+        wrt_listboxdd(control_values)     
     elif control_type == "DropDownCombo":
         wrt_combobox(control_values)        
     elif control_type == "EditMulti":
